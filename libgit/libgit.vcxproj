@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -24,14 +24,14 @@
     <VCPKGArch Condition="'$(Platform)'=='Win32'">x86-windows</VCPKGArch>
     <VCPKGArch Condition="'$(Platform)'!='Win32'">x64-windows</VCPKGArch>
     <VCPKGArchDirectory>..\compat\vcbuild\vcpkg\installed\$(VCPKGArch)</VCPKGArchDirectory>
-    <VCPKGBinDirectory Condition="'(Configuration)'=='Debug'">$(VCPKGArchDirectory)\debug\bin</VCPKGBinDirectory>
-    <VCPKGLibDirectory Condition="'(Configuration)'=='Debug'">$(VCPKGArchDirectory)\debug\lib</VCPKGLibDirectory>
-    <VCPKGBinDirectory Condition="'(Configuration)'!='Debug'">$(VCPKGArchDirectory)\bin</VCPKGBinDirectory>
-    <VCPKGLibDirectory Condition="'(Configuration)'!='Debug'">$(VCPKGArchDirectory)\lib</VCPKGLibDirectory>
+    <VCPKGBinDirectory Condition="'$(Configuration)'=='Debug'">$(VCPKGArchDirectory)\debug\bin</VCPKGBinDirectory>
+    <VCPKGLibDirectory Condition="'$(Configuration)'=='Debug'">$(VCPKGArchDirectory)\debug\lib</VCPKGLibDirectory>
+    <VCPKGBinDirectory Condition="'$(Configuration)'!='Debug'">$(VCPKGArchDirectory)\bin</VCPKGBinDirectory>
+    <VCPKGLibDirectory Condition="'$(Configuration)'!='Debug'">$(VCPKGArchDirectory)\lib</VCPKGLibDirectory>
     <VCPKGIncludeDirectory>$(VCPKGArchDirectory)\include</VCPKGIncludeDirectory>
-    <VCPKGLibs Condition="'(Configuration)'=='Debug'">
+    <VCPKGLibs Condition="'$(Configuration)'=='Debug'">
     </VCPKGLibs>
-    <VCPKGLibs Condition="'(Configuration)'!='Debug'">
+    <VCPKGLibs Condition="'$(Configuration)'!='Debug'">
     </VCPKGLibs>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -97,7 +97,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;BINDIR="bin";DEFAULT_HELP_FORMAT="html";DETECT_MSYS_TTY;ETC_GITATTRIBUTES="etc/gitattributes";ETC_GITCONFIG="etc/gitconfig";FALLBACK_RUNTIME_PREFIX="/mingw64";GAWK;GIT_BUILT_FROM_COMMIT="89eadabf8039fb815021b8bb000e232cb8a49d23";GIT_EXEC_PATH="libexec/git-core";GIT_HOST_CPU="x86_64";GIT_LOCALE_PATH="share/locale";GIT_USER_AGENT="git/2.23.0.windows.1.8.g89eadabf80.MSVC";GIT_VERSION="2.23.0.windows.1.8.g89eadabf80.MSVC";HAVE_ALLOCA_H;HAVE_STRING_H;HAVE_WPGMPTR;MMAP_PREVENTS_DELETE;NATIVE_CRLF;NDEBUG;NOGDI;NO_GETTEXT;NO_INTTYPES_H;NO_IPV6;NO_LIBGEN_H;NO_MBSUPPORT;NO_MEMMEM;NO_MKDTEMP;NO_POLL;NO_POLL_H;NO_POSIX_GOODIES;NO_PREAD;NO_SETENV;NO_STRCASESTR;NO_STRLCPY;NO_STRTOUMAX;NO_ST_BLOCKS_IN_STRUCT_STAT;NO_SYMLINK_HEAD;NO_SYS_POLL_H;NO_UNIX_SOCKETS;OBJECT_CREATION_MODE=1;PAGER_ENV="LESS=FRX LV=-c";PROTECT_NTFS_DEFAULT=1;RUNTIME_PREFIX;SHA1DC_CUSTOM_INCLUDE_SHA1_C="cache.h";SHA1DC_CUSTOM_INCLUDE_UBC_CHECK_C="git-compat-util.h";SHA1DC_INIT_SAFE_HASH_DEFAULT=0;SHA1DC_NO_STANDARD_INCLUDES;SHA1_DC;SHA256_BLK;SHELL_PATH="/bin/sh";STRIP_EXTENSION=".exe";UNRELIABLE_FSTAT;USE_CURL_FOR_IMAP_SEND;USE_WIN32_MMAP;WIN32;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;__USE_MINGW_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;BINDIR="bin";DC_SHA1_SUBMODULE;DEFAULT_HELP_FORMAT="html";DETECT_MSYS_TTY;ETC_GITATTRIBUTES="etc/gitattributes";ETC_GITCONFIG="etc/gitconfig";FALLBACK_RUNTIME_PREFIX="/mingw64";GAWK;GIT_BUILT_FROM_COMMIT="df1ca1cdb782fe60dcdaf0312a952565466b6107";GIT_EXEC_PATH="libexec/git-core";GIT_HOST_CPU="x86_64";GIT_LOCALE_PATH="share/locale";GIT_USER_AGENT="git/2.23.0.windows.1.8.gdf1ca1cdb7.MSVC";GIT_VERSION="2.23.0.windows.1.8.gdf1ca1cdb7.MSVC";HAVE_ALLOCA_H;HAVE_STRING_H;HAVE_WPGMPTR;MMAP_PREVENTS_DELETE;NATIVE_CRLF;NDEBUG;NOGDI;NO_GETTEXT;NO_INTTYPES_H;NO_IPV6;NO_LIBGEN_H;NO_MBSUPPORT;NO_MEMMEM;NO_MKDTEMP;NO_POLL;NO_POLL_H;NO_POSIX_GOODIES;NO_PREAD;NO_SETENV;NO_STRCASESTR;NO_STRLCPY;NO_STRTOUMAX;NO_ST_BLOCKS_IN_STRUCT_STAT;NO_SYMLINK_HEAD;NO_SYS_POLL_H;NO_UNIX_SOCKETS;OBJECT_CREATION_MODE=1;PAGER_ENV="LESS=FRX LV=-c";PROTECT_NTFS_DEFAULT=1;RUNTIME_PREFIX;SHA1DC_CUSTOM_INCLUDE_SHA1_C="cache.h";SHA1DC_CUSTOM_INCLUDE_UBC_CHECK_C="git-compat-util.h";SHA1DC_INIT_SAFE_HASH_DEFAULT=0;SHA1DC_NO_STANDARD_INCLUDES;SHA1_DC;SHA256_BLK;SHELL_PATH="/bin/sh";STRIP_EXTENSION=".exe";UNRELIABLE_FSTAT;USE_CURL_FOR_IMAP_SEND;USE_WIN32_MMAP;WIN32;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;__USE_MINGW_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -108,7 +108,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;BINDIR="bin";DEFAULT_HELP_FORMAT="html";DETECT_MSYS_TTY;ETC_GITATTRIBUTES="etc/gitattributes";ETC_GITCONFIG="etc/gitconfig";FALLBACK_RUNTIME_PREFIX="/mingw64";GAWK;GIT_BUILT_FROM_COMMIT="89eadabf8039fb815021b8bb000e232cb8a49d23";GIT_EXEC_PATH="libexec/git-core";GIT_HOST_CPU="x86_64";GIT_LOCALE_PATH="share/locale";GIT_USER_AGENT="git/2.23.0.windows.1.8.g89eadabf80.MSVC";GIT_VERSION="2.23.0.windows.1.8.g89eadabf80.MSVC";HAVE_ALLOCA_H;HAVE_STRING_H;HAVE_WPGMPTR;MMAP_PREVENTS_DELETE;NATIVE_CRLF;NDEBUG;NOGDI;NO_GETTEXT;NO_INTTYPES_H;NO_IPV6;NO_LIBGEN_H;NO_MBSUPPORT;NO_MEMMEM;NO_MKDTEMP;NO_POLL;NO_POLL_H;NO_POSIX_GOODIES;NO_PREAD;NO_SETENV;NO_STRCASESTR;NO_STRLCPY;NO_STRTOUMAX;NO_ST_BLOCKS_IN_STRUCT_STAT;NO_SYMLINK_HEAD;NO_SYS_POLL_H;NO_UNIX_SOCKETS;OBJECT_CREATION_MODE=1;PAGER_ENV="LESS=FRX LV=-c";PROTECT_NTFS_DEFAULT=1;RUNTIME_PREFIX;SHA1DC_CUSTOM_INCLUDE_SHA1_C="cache.h";SHA1DC_CUSTOM_INCLUDE_UBC_CHECK_C="git-compat-util.h";SHA1DC_INIT_SAFE_HASH_DEFAULT=0;SHA1DC_NO_STANDARD_INCLUDES;SHA1_DC;SHA256_BLK;SHELL_PATH="/bin/sh";STRIP_EXTENSION=".exe";UNRELIABLE_FSTAT;USE_CURL_FOR_IMAP_SEND;USE_WIN32_MMAP;WIN32;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;__USE_MINGW_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;BINDIR="bin";DC_SHA1_SUBMODULE;DEFAULT_HELP_FORMAT="html";DETECT_MSYS_TTY;ETC_GITATTRIBUTES="etc/gitattributes";ETC_GITCONFIG="etc/gitconfig";FALLBACK_RUNTIME_PREFIX="/mingw64";GAWK;GIT_BUILT_FROM_COMMIT="df1ca1cdb782fe60dcdaf0312a952565466b6107";GIT_EXEC_PATH="libexec/git-core";GIT_HOST_CPU="x86_64";GIT_LOCALE_PATH="share/locale";GIT_USER_AGENT="git/2.23.0.windows.1.8.gdf1ca1cdb7.MSVC";GIT_VERSION="2.23.0.windows.1.8.gdf1ca1cdb7.MSVC";HAVE_ALLOCA_H;HAVE_STRING_H;HAVE_WPGMPTR;MMAP_PREVENTS_DELETE;NATIVE_CRLF;NDEBUG;NOGDI;NO_GETTEXT;NO_INTTYPES_H;NO_IPV6;NO_LIBGEN_H;NO_MBSUPPORT;NO_MEMMEM;NO_MKDTEMP;NO_POLL;NO_POLL_H;NO_POSIX_GOODIES;NO_PREAD;NO_SETENV;NO_STRCASESTR;NO_STRLCPY;NO_STRTOUMAX;NO_ST_BLOCKS_IN_STRUCT_STAT;NO_SYMLINK_HEAD;NO_SYS_POLL_H;NO_UNIX_SOCKETS;OBJECT_CREATION_MODE=1;PAGER_ENV="LESS=FRX LV=-c";PROTECT_NTFS_DEFAULT=1;RUNTIME_PREFIX;SHA1DC_CUSTOM_INCLUDE_SHA1_C="cache.h";SHA1DC_CUSTOM_INCLUDE_UBC_CHECK_C="git-compat-util.h";SHA1DC_INIT_SAFE_HASH_DEFAULT=0;SHA1DC_NO_STANDARD_INCLUDES;SHA1_DC;SHA256_BLK;SHELL_PATH="/bin/sh";STRIP_EXTENSION=".exe";UNRELIABLE_FSTAT;USE_CURL_FOR_IMAP_SEND;USE_WIN32_MMAP;WIN32;_CONSOLE;_CRT_NONSTDC_NO_DEPRECATE;_CRT_SECURE_NO_WARNINGS;__USE_MINGW_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
@@ -298,8 +298,8 @@
     <ClCompile Include="..\sha1-file.c" />
     <ClCompile Include="..\sha1-lookup.c" />
     <ClCompile Include="..\sha1-name.c" />
-    <ClCompile Include="..\sha1dc\sha1.c" />
-    <ClCompile Include="..\sha1dc\ubc_check.c" />
+    <ClCompile Include="..\sha1collisiondetection\lib\sha1.c" />
+    <ClCompile Include="..\sha1collisiondetection\lib\ubc_check.c" />
     <ClCompile Include="..\sha1dc_git.c" />
     <ClCompile Include="..\sha256\block\sha256.c" />
     <ClCompile Include="..\shallow.c" />
