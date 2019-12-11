@@ -142,6 +142,7 @@
     <ClCompile Include="..\..\..\t\helper\test-oidmap.c" />
     <ClCompile Include="..\..\..\t\helper\test-online-cpus.c" />
     <ClCompile Include="..\..\..\t\helper\test-parse-options.c" />
+	<ClCompile Include="..\..\..\t\helper\test-parse-pathspec-file.c" />
     <ClCompile Include="..\..\..\t\helper\test-path-utils.c" />
     <ClCompile Include="..\..\..\t\helper\test-pkt-line.c" />
     <ClCompile Include="..\..\..\t\helper\test-prio-queue.c" />
