@@ -1206,7 +1206,7 @@ static int parse_branchname_arg(int argc, const char **argv,
 		 * Absence of '--' leaves <pathspec>/<commit> ambiguity.
 		 * Try to resolve it with additional knowledge about pathspec args.
 		 */
-		arg0_cant_be_pathspec = !opts->accept_pathspec;
+		arg0_cant_be_pathspec = !opts->accept_pathspec || opts->pathspec_from_file;
 	} else if (dash_dash_pos == 0) {
 		/* 'git checkout/switch/restore -- [...]' */
 		return 1;  /* Eat '--' */
