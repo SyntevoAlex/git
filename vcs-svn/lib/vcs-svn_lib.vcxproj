@@ -45,7 +45,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <!-- <CharacterSet>UTF-8</CharacterSet> -->
     <OutDir>..\</OutDir>
     <!-- <IntDir>$(ProjectDir)$(Configuration)\</IntDir> -->
