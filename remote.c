@@ -691,6 +691,17 @@ static int refspec_match(const struct refspec_item *refspec,
 	return !strcmp(refspec->src, name);
 }
 
+static int has_negative_refspec(struct refspec *rs)
+{
+	int i;
+
+	for (i = 0; i < rs->nr; i++) {
+		if (rs->items[i].negative)
+			return 1;
+	}
+	return 0;
+}
+
 static int omit_name_by_refspec(const char *name, struct refspec *rs)
 {
 	int i;
@@ -705,6 +716,10 @@ static int omit_name_by_refspec(const char *name, struct refspec *rs)
 struct ref *apply_negative_refspecs(struct ref *ref_map, struct refspec *rs)
 {
 	struct ref **tail;
+
+	/* Optimization: skip expensive O(N*N) for bulk promisor queries */
+	if (!has_negative_refspec(rs))
+		return ref_map;
 
 	for (tail = &ref_map; *tail; ) {
 		struct ref *ref = *tail;

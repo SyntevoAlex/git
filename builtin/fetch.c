@@ -31,6 +31,9 @@
 
 #define FORCED_UPDATES_DELAY_WARNING_IN_MS (10 * 1000)
 
+// @@@@
+extern void printCurrentTime(const char *a_Caption, int a_LevelChange);
+
 static const char * const builtin_fetch_usage[] = {
 	N_("git fetch [<options>] [<repository> [<refspec>...]]"),
 	N_("git fetch [<options>] <group>"),
@@ -1088,6 +1091,8 @@ static int store_updated_refs(const char *raw_url, const char *remote_name,
  */
 static int check_exist_and_connected(struct ref *ref_map)
 {
+	printCurrentTime("check_exist_and_connected() - begin", +1);
+
 	struct ref *rm = ref_map;
 	struct check_connected_options opt = CHECK_CONNECTED_INIT;
 	struct ref *r;
@@ -1099,8 +1104,10 @@ static int check_exist_and_connected(struct ref *ref_map)
 	 * really need to perform.  Claiming failure now will ensure
 	 * we perform the network exchange to deepen our history.
 	 */
-	if (deepen)
+	if (deepen) {
+		printCurrentTime("check_exist_and_connected() - end", -1);
 		return -1;
+	}
 
 	/*
 	 * check_connected() allows objects to merely be promised, but
@@ -1108,35 +1115,47 @@ static int check_exist_and_connected(struct ref *ref_map)
 	 */
 	for (r = rm; r; r = r->next) {
 		if (!has_object_file_with_flags(&r->old_oid,
-						OBJECT_INFO_SKIP_FETCH_OBJECT))
+						OBJECT_INFO_SKIP_FETCH_OBJECT)) {
+			printCurrentTime("check_exist_and_connected() - end", -1);
 			return -1;
+		}
 	}
 
 	opt.quiet = 1;
-	return check_connected(iterate_ref_map, &rm, &opt);
+	int ret = check_connected(iterate_ref_map, &rm, &opt);
+	printCurrentTime("check_exist_and_connected() - end", -1);
+	return ret;
 }
 
 static int fetch_refs(struct transport *transport, struct ref *ref_map)
 {
+	printCurrentTime("fetch_refs() - begin", +1);
+
 	int ret = check_exist_and_connected(ref_map);
 	if (ret) {
 		trace2_region_enter("fetch", "fetch_refs", the_repository);
 		ret = transport_fetch_refs(transport, ref_map);
 		trace2_region_leave("fetch", "fetch_refs", the_repository);
 	}
-	if (!ret)
+	if (!ret) {
 		/*
 		 * Keep the new pack's ".keep" file around to allow the caller
 		 * time to update refs to reference the new objects.
 		 */
+		printCurrentTime("fetch_refs() - end", -1);
 		return 0;
+	}
 	transport_unlock_pack(transport);
+
+	printCurrentTime("fetch_refs() - end", -1);
 	return ret;
 }
 
 /* Update local refs based on the ref values fetched from a remote */
 static int consume_refs(struct transport *transport, struct ref *ref_map)
 {
+	printCurrentTime("consume_refs() - begin", +1);
+
 	int connectivity_checked = transport->smart_options
 		? transport->smart_options->connectivity_checked : 0;
 	int ret;
@@ -1147,6 +1166,8 @@ static int consume_refs(struct transport *transport, struct ref *ref_map)
 				 ref_map);
 	transport_unlock_pack(transport);
 	trace2_region_leave("fetch", "consume_refs", the_repository);
+
+	printCurrentTime("consume_refs() - end", -1);
 	return ret;
 }
 
@@ -1277,6 +1298,8 @@ static void add_negotiation_tips(struct git_transport_options *smart_options)
 
 static struct transport *prepare_transport(struct remote *remote, int deepen)
 {
+	printCurrentTime("prepare_transport() - begin", +1);
+
 	struct transport *transport;
 
 	transport = transport_get(remote, NULL);
@@ -1309,6 +1332,8 @@ static struct transport *prepare_transport(struct remote *remote, int deepen)
 		else
 			warning("Ignoring --negotiation-tip because the protocol does not support it.");
 	}
+
+	printCurrentTime("prepare_transport() - end", -1);
 	return transport;
 }
 
@@ -1714,6 +1739,8 @@ static inline void fetch_one_setup_partial(struct remote *remote)
 static int fetch_one(struct remote *remote, int argc, const char **argv,
 		     int prune_tags_ok, int use_stdin_refspecs)
 {
+	printCurrentTime("fetch_one() - begin", +1);
+
 	struct refspec rs = REFSPEC_INIT_FETCH;
 	int i;
 	int exit_code;
@@ -1766,12 +1793,16 @@ static int fetch_one(struct remote *remote, int argc, const char **argv,
 		}
 	}
 
+	printCurrentTime("fetch_one() - before parsing stdin", 0);
+
 	if (use_stdin_refspecs) {
 		struct strbuf line = STRBUF_INIT;
 		while (strbuf_getline_lf(&line, stdin) != EOF)
 			refspec_append(&rs, line.buf);
 		strbuf_release(&line);
 	}
+
+	printCurrentTime("fetch_one() - after parsing stdin", 0);
 
 	if (server_options.nr)
 		gtransport->server_options = &server_options;
@@ -1784,11 +1815,15 @@ static int fetch_one(struct remote *remote, int argc, const char **argv,
 	refspec_clear(&rs);
 	transport_disconnect(gtransport);
 	gtransport = NULL;
+
+	printCurrentTime("fetch_one() - end", -1);
 	return exit_code;
 }
 
 int cmd_fetch(int argc, const char **argv, const char *prefix)
 {
+	printCurrentTime("cmd_fetch() - begin", +1);
+
 	int i;
 	struct string_list list = STRING_LIST_INIT_DUP;
 	struct remote *remote = NULL;
@@ -1939,5 +1974,6 @@ int cmd_fetch(int argc, const char **argv, const char *prefix)
 	if (enable_auto_gc)
 		run_auto_maintenance(verbosity < 0);
 
+	printCurrentTime("cmd_fetch() - end", -1);
 	return result;
 }

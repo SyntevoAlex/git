@@ -24,6 +24,9 @@
 #include "fsck.h"
 #include "shallow.h"
 
+// @@@@
+extern void printCurrentTime(const char *a_Caption, int a_LevelChange);
+
 static int transfer_unpack_limit = -1;
 static int fetch_unpack_limit = -1;
 static int unpack_limit = 100;
@@ -804,6 +807,8 @@ static int get_pack(struct fetch_pack_args *args,
 		    int only_packfile,
 		    struct ref **sought, int nr_sought)
 {
+	printCurrentTime("get_pack() - begin", +1);
+
 	struct async demux;
 	int do_keep = args->keep_pack;
 	const char *cmd_name;
@@ -943,6 +948,7 @@ static int get_pack(struct fetch_pack_args *args,
 	if (do_keep && pack_lockfiles && pack_lockfiles->nr && args->from_promisor)
 		write_promisor_file(pack_lockfiles->items[0].string, sought, nr_sought);
 
+	printCurrentTime("get_pack() - end", -1);
 	return 0;
 }
 
@@ -1185,6 +1191,8 @@ static int send_fetch_request(struct fetch_negotiator *negotiator, int fd_out,
 			      int *haves_to_send, int *in_vain,
 			      int sideband_all, int seen_ack)
 {
+	printCurrentTime("send_fetch_request() - begin", +1);
+
 	int ret = 0;
 	const char *hash_name;
 	struct strbuf req_buf = STRBUF_INIT;
@@ -1272,11 +1280,15 @@ static int send_fetch_request(struct fetch_negotiator *negotiator, int fd_out,
 			haves_to_send, in_vain);
 
 	/* Send request */
+	printCurrentTime("send_fetch_request() - before write_in_full()", 0);
 	packet_buf_flush(&req_buf);
 	if (write_in_full(fd_out, req_buf.buf, req_buf.len) < 0)
 		die_errno(_("unable to write request to remote"));
+	printCurrentTime("send_fetch_request() - after write_in_full()", 0);
 
 	strbuf_release(&req_buf);
+
+	printCurrentTime("send_fetch_request() - end", -1);
 	return ret;
 }
 
@@ -1330,6 +1342,8 @@ static enum common_found process_acks(struct fetch_negotiator *negotiator,
 				      struct packet_reader *reader,
 				      struct oidset *common)
 {
+	printCurrentTime("process_acks() - begin", +1);
+
 	/* received */
 	int received_ready = 0;
 	int received_ack = 0;
@@ -1378,6 +1392,7 @@ static enum common_found process_acks(struct fetch_negotiator *negotiator,
 	if (!received_ready && reader->status != PACKET_READ_FLUSH)
 		die(_("expected no other sections to be sent after no 'ready'"));
 
+	printCurrentTime("process_acks() - end", -1);
 	return received_ready ? READY :
 		(received_ack ? COMMON_FOUND : NO_COMMON_FOUND);
 }
@@ -1387,6 +1402,8 @@ static void receive_shallow_info(struct fetch_pack_args *args,
 				 struct oid_array *shallows,
 				 struct shallow_info *si)
 {
+	printCurrentTime("receive_shallow_info() - begin", +1);
+
 	int unshallow_received = 0;
 
 	process_section_header(reader, "shallow-info", 0);
@@ -1448,6 +1465,8 @@ static void receive_shallow_info(struct fetch_pack_args *args,
 	} else {
 		alternate_shallow_file = NULL;
 	}
+
+	printCurrentTime("receive_shallow_info() - end", -1);
 }
 
 static int cmp_name_ref(const void *name, const void *ref)
@@ -1458,6 +1477,8 @@ static int cmp_name_ref(const void *name, const void *ref)
 static void receive_wanted_refs(struct packet_reader *reader,
 				struct ref **sought, int nr_sought)
 {
+	printCurrentTime("receive_wanted_refs() - begin", +1);
+
 	process_section_header(reader, "wanted-refs", 0);
 	while (packet_reader_read(reader) == PACKET_READ_NORMAL) {
 		struct object_id oid;
@@ -1476,6 +1497,8 @@ static void receive_wanted_refs(struct packet_reader *reader,
 
 	if (reader->status != PACKET_READ_DELIM)
 		die(_("error processing wanted refs: %d"), reader->status);
+
+	printCurrentTime("receive_wanted_refs() - end", -1);
 }
 
 static void receive_packfile_uris(struct packet_reader *reader,
@@ -1602,6 +1625,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 			}
 			break;
 		case FETCH_GET_PACK:
+			printCurrentTime("FETCH_GET_PACK - begin", +1);
 			trace2_region_leave("fetch-pack",
 					    "negotiation_v2",
 					    the_repository);
@@ -1621,6 +1645,7 @@ static struct ref *do_fetch_pack_v2(struct fetch_pack_args *args,
 				die(_("git fetch-pack: fetch failed."));
 			do_check_stateless_delimiter(args, &reader);
 
+			printCurrentTime("FETCH_GET_PACK - end", -1);
 			state = FETCH_DONE;
 			break;
 		case FETCH_DONE:
@@ -1738,8 +1763,37 @@ static void fetch_pack_setup(void)
 	did_setup = 1;
 }
 
+#include <windows.h>
+int g_LogLevel = 0;
+void printCurrentTime(const char* a_Caption, int a_LevelChange)
+{
+	if (a_LevelChange < 0)
+		g_LogLevel += a_LevelChange;
+
+	SYSTEMTIME time;
+	GetLocalTime(&time);
+
+	char buffer[256];
+	char *pos = buffer;
+	pos += wsprintf(pos, "%02d:%02d:%02d.%03d ",
+			time.wHour, time.wMinute, time.wSecond,
+			time.wMilliseconds);
+
+	const size_t numSpaces = g_LogLevel * 2;
+	memset(pos, ' ', numSpaces);
+	pos += numSpaces;
+	pos += wsprintf(pos, "%s\n", a_Caption);
+	OutputDebugStringA(buffer);
+
+	if (a_LevelChange > 0)
+	    g_LogLevel += a_LevelChange;
+}
+
+
 static int remove_duplicates_in_refs(struct ref **ref, int nr)
 {
+	// @@@@
+#if 0
 	struct string_list names = STRING_LIST_INIT_NODUP;
 	int src, dst;
 
@@ -1757,6 +1811,9 @@ static int remove_duplicates_in_refs(struct ref **ref, int nr)
 		ref[src] = NULL;
 	string_list_clear(&names, 0);
 	return dst;
+#endif
+
+	return nr;
 }
 
 static void update_shallow(struct fetch_pack_args *args,

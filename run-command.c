@@ -8,6 +8,9 @@
 #include "string-list.h"
 #include "quote.h"
 
+// @@@@
+extern void printCurrentTime(const char *a_Caption, int a_LevelChange);
+
 void child_process_init(struct child_process *child)
 {
 	memset(child, 0, sizeof(*child));
@@ -1868,11 +1871,15 @@ int run_processes_parallel_tr2(int n, get_next_task_fn get_next_task,
 
 int run_auto_maintenance(int quiet)
 {
+	printCurrentTime("run_auto_maintenance() - begin", +1);
+
 	struct child_process maint = CHILD_PROCESS_INIT;
 
 	maint.git_cmd = 1;
 	strvec_pushl(&maint.args, "maintenance", "run", "--auto", NULL);
 	strvec_push(&maint.args, quiet ? "--quiet" : "--no-quiet");
 
-	return run_command(&maint);
+	int ret = run_command(&maint);
+	printCurrentTime("run_auto_maintenance() - end", -1);
+	return ret;
 }

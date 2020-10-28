@@ -23,6 +23,9 @@
 #include "object-store.h"
 #include "color.h"
 
+// @@@@
+extern void printCurrentTime(const char *a_Caption, int a_LevelChange);
+
 static int transport_use_color = -1;
 static char transport_colors[][COLOR_MAXLEN] = {
 	GIT_COLOR_RESET,
@@ -332,6 +335,8 @@ static struct ref *get_refs_via_connect(struct transport *transport, int for_pus
 static int fetch_refs_via_pack(struct transport *transport,
 			       int nr_heads, struct ref **to_fetch)
 {
+	printCurrentTime("fetch_refs_via_pack() - begin", +1);
+
 	int ret = 0;
 	struct git_transport_data *data = transport->data;
 	struct ref *refs = NULL;
@@ -400,6 +405,8 @@ static int fetch_refs_via_pack(struct transport *transport,
 
 	free_refs(refs_tmp);
 	free_refs(refs);
+
+	printCurrentTime("fetch_refs_via_pack() - end", -1);
 	return ret;
 }
 
@@ -1376,6 +1383,8 @@ const struct ref *transport_get_remote_refs(struct transport *transport,
 
 int transport_fetch_refs(struct transport *transport, struct ref *refs)
 {
+	printCurrentTime("transport_fetch_refs() - begin", +1);
+
 	int rc;
 	int nr_heads = 0, nr_alloc = 0, nr_refs = 0;
 	struct ref **heads = NULL;
@@ -1407,6 +1416,8 @@ int transport_fetch_refs(struct transport *transport, struct ref *refs)
 	rc = transport->vtable->fetch(transport, nr_heads, heads);
 
 	free(heads);
+
+	printCurrentTime("transport_fetch_refs() - end", -1);
 	return rc;
 }
 

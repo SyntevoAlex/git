@@ -661,6 +661,8 @@ static int process_connect_service(struct transport *transport,
 static int process_connect(struct transport *transport,
 				     int for_push)
 {
+	printCurrentTime("process_connect() - begin", +1);
+
 	struct helper_data *data = transport->data;
 	const char *name;
 	const char *exec;
@@ -671,7 +673,9 @@ static int process_connect(struct transport *transport,
 	else
 		exec = data->transport_options.uploadpack;
 
-	return process_connect_service(transport, name, exec);
+	int ret = process_connect_service(transport, name, exec);
+	printCurrentTime("process_connect() - end", -1);
+	return ret;
 }
 
 static int connect_helper(struct transport *transport, const char *name,
@@ -698,6 +702,8 @@ static struct ref *get_refs_list_using_list(struct transport *transport,
 static int fetch(struct transport *transport,
 		 int nr_heads, struct ref **to_fetch)
 {
+	printCurrentTime("fetch() - begin", +1);
+
 	struct helper_data *data = transport->data;
 	int i, count;
 
@@ -705,7 +711,9 @@ static int fetch(struct transport *transport,
 
 	if (process_connect(transport, 0)) {
 		do_take_over(transport);
-		return transport->vtable->fetch(transport, nr_heads, to_fetch);
+		int ret = transport->vtable->fetch(transport, nr_heads, to_fetch);
+		printCurrentTime("fetch() - end", -1);
+		return ret;
 	}
 
 	if (!data->get_refs_list_called)
@@ -738,11 +746,17 @@ static int fetch(struct transport *transport,
 	if (data->transport_options.negotiation_tips)
 		warning("Ignoring --negotiation-tip because the protocol does not support it.");
 
-	if (data->fetch)
-		return fetch_with_fetch(transport, nr_heads, to_fetch);
+	if (data->fetch) {
+		int ret = fetch_with_fetch(transport, nr_heads, to_fetch);
+		printCurrentTime("fetch() - end", -1);
+		return ret;
+	}
 
-	if (data->import)
-		return fetch_with_import(transport, nr_heads, to_fetch);
+	if (data->import) {
+		int ret = fetch_with_import(transport, nr_heads, to_fetch);
+		printCurrentTime("fetch() - end", -1);
+		return ret;
+	}
 
 	return -1;
 }

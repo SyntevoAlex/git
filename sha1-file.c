@@ -33,6 +33,9 @@
 #include "object-store.h"
 #include "promisor-remote.h"
 
+ // @@@@
+extern void printCurrentTime(const char *a_Caption, int a_LevelChange);
+
 /* The maximum size for an object header. */
 #define MAX_HEADER_LEN 32
 
@@ -2239,6 +2242,8 @@ int index_path(struct index_state *istate, struct object_id *oid,
 
 int read_pack_header(int fd, struct pack_header *header)
 {
+	printCurrentTime("read_pack_header() - begin", +1);
+
 	if (read_in_full(fd, header, sizeof(*header)) != sizeof(*header))
 		/* "eof before pack header was fully read" */
 		return PH_ERROR_EOF;
@@ -2249,6 +2254,8 @@ int read_pack_header(int fd, struct pack_header *header)
 	if (!pack_version_ok(header->hdr_version))
 		/* "protocol error (pack version unsupported)" */
 		return PH_ERROR_PROTOCOL;
+
+	printCurrentTime("read_pack_header() - end", -1);
 	return 0;
 }
 

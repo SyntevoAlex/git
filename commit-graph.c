@@ -1490,6 +1490,8 @@ int write_commit_graph_reachable(struct object_directory *odb,
 				 enum commit_graph_write_flags flags,
 				 const struct commit_graph_opts *opts)
 {
+	printCurrentTime("write_commit_graph_reachable() - begin", +1);
+
 	struct oidset commits = OIDSET_INIT;
 	struct refs_cb_data data;
 	int result;
@@ -1508,6 +1510,8 @@ int write_commit_graph_reachable(struct object_directory *odb,
 				    flags, opts);
 
 	oidset_clear(&commits);
+
+	printCurrentTime("write_commit_graph_reachable() - end", -1);
 	return result;
 }
 
