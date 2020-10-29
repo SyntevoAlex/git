@@ -3,8 +3,21 @@
 
 struct list_objects_filter_options;
 struct object;
-struct oidset;
 struct repository;
+
+#include "oidmap.h"
+
+struct filterobjmap_entry {
+	struct oidmap_entry e;
+
+	int type;
+	char *string;
+};
+
+void *filterobjmap_put(struct oidmap *map, struct object_id *oid,
+		       int type, const char *string);
+
+void filterobjmap_free(struct oidmap *map);
 
 /*
  * During list-object traversal we allow certain objects to be
@@ -70,7 +83,7 @@ struct filter;
  * filter *`.
  */
 struct filter *list_objects_filter__init(
-	struct oidset *omitted,
+	struct oidmap *omitted,
 	struct list_objects_filter_options *filter_options);
 
 /*

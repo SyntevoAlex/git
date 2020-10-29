@@ -10,6 +10,9 @@
 #pragma warning(disable: 4244) /* type conversion, possible loss of data */
 #pragma warning(disable: 4090) /* 'function' : different 'const' qualifiers (ALLOC_GROW etc.)*/
 
+#pragma warning(error : 4028) /* formal parameter different from declaration */
+#pragma warning(error : 4133) /* 'function': incompatible types */
+
 /* porting function */
 #define inline __inline
 #define __inline__ __inline

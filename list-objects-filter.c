@@ -10,9 +10,29 @@
 #include "list-objects.h"
 #include "list-objects-filter.h"
 #include "list-objects-filter-options.h"
-#include "oidmap.h"
-#include "oidset.h"
 #include "object-store.h"
+
+void *filterobjmap_put(struct oidmap *map, struct object_id *oid, int type,
+		       const char *string)
+{
+	struct filterobjmap_entry *ex = xmalloc(sizeof(*ex));
+	oidcpy(&ex->e.oid, oid);
+	ex->string = xstrdup(string);
+	ex->type = type;
+	return oidmap_put(map, ex);
+}
+
+void filterobjmap_free(struct oidmap *map)
+{
+	struct oidmap_iter iter;
+	struct filterobjmap_entry *entry;
+	oidmap_iter_init(map, &iter);
+	while ((entry = oidmap_iter_next(&iter))) {
+		free(entry->string);
+	}
+
+	oidmap_free(map, 1);
+}
 
 /* Remember to update object flag allocation in object.h */
 /*
@@ -29,7 +49,7 @@
 struct subfilter {
 	struct filter *filter;
 	struct oidset seen;
-	struct oidset omits;
+	struct oidmap omits;
 	struct object_id skip_tree;
 	unsigned is_skipping_tree : 1;
 };
@@ -41,7 +61,7 @@ struct filter {
 		struct object *obj,
 		const char *pathname,
 		const char *filename,
-		struct oidset *omits,
+		struct oidmap *omits,
 		void *filter_data);
 
 	/*
@@ -59,14 +79,14 @@ struct filter {
 	 * As such, the omits sets must be separate sets, and can only
 	 * be unioned after the traversal is completed.
 	 */
-	void (*finalize_omits_fn)(struct oidset *omits, void *filter_data);
+	void (*finalize_omits_fn)(struct oidmap *omits, void *filter_data);
 
 	void (*free_fn)(void *filter_data);
 
 	void *filter_data;
 
 	/* If non-NULL, the filter collects a list of the omitted OIDs here. */
-	struct oidset *omits;
+	struct oidmap *omits;
 };
 
 static enum list_objects_filter_result filter_blobs_none(
@@ -75,7 +95,7 @@ static enum list_objects_filter_result filter_blobs_none(
 	struct object *obj,
 	const char *pathname,
 	const char *filename,
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data_)
 {
 	switch (filter_situation) {
@@ -96,7 +116,7 @@ static enum list_objects_filter_result filter_blobs_none(
 		assert((obj->flags & SEEN) == 0);
 
 		if (omits)
-			oidset_insert(omits, &obj->oid);
+			filterobjmap_put(omits, &obj->oid, obj->type, pathname);
 		return LOFR_MARK_SEEN; /* but not LOFR_DO_SHOW (hard omit) */
 	}
 }
@@ -136,16 +156,23 @@ struct seen_map_entry {
 /* Returns 1 if the oid was in the omits set before it was invoked. */
 static int filter_trees_update_omits(
 	struct object *obj,
-	struct oidset *omits,
-	int include_it)
+	struct oidmap *omits,
+	int include_it,
+	const char *pathname)
 {
 	if (!omits)
 		return 0;
 
 	if (include_it)
-		return oidset_remove(omits, &obj->oid);
-	else
-		return oidset_insert(omits, &obj->oid);
+		// @@@@ Free the entry?
+		return !!oidmap_remove(omits, &obj->oid);
+	else {
+		if (oidmap_get(omits, &obj->oid))
+			return 1;
+
+		filterobjmap_put(omits, &obj->oid, obj->type, pathname);
+		return 0;
+	}
 }
 
 static enum list_objects_filter_result filter_trees_depth(
@@ -154,7 +181,7 @@ static enum list_objects_filter_result filter_trees_depth(
 	struct object *obj,
 	const char *pathname,
 	const char *filename,
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data_)
 {
 	struct filter_trees_depth_data *filter_data = filter_data_;
@@ -179,7 +206,7 @@ static enum list_objects_filter_result filter_trees_depth(
 		return LOFR_ZERO;
 
 	case LOFS_BLOB:
-		filter_trees_update_omits(obj, omits, include_it);
+		filter_trees_update_omits(obj, omits, include_it, pathname);
 		return include_it ? LOFR_MARK_SEEN | LOFR_DO_SHOW : LOFR_ZERO;
 
 	case LOFS_BEGIN_TREE:
@@ -200,7 +227,7 @@ static enum list_objects_filter_result filter_trees_depth(
 			filter_res = LOFR_SKIP_TREE;
 		} else {
 			int been_omitted = filter_trees_update_omits(
-				obj, omits, include_it);
+				obj, omits, include_it, pathname);
 			seen_info->depth = filter_data->current_depth;
 
 			if (include_it)
@@ -256,7 +283,7 @@ static enum list_objects_filter_result filter_blobs_limit(
 	struct object *obj,
 	const char *pathname,
 	const char *filename,
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data_)
 {
 	struct filter_blobs_limit_data *filter_data = filter_data_;
@@ -295,13 +322,13 @@ static enum list_objects_filter_result filter_blobs_limit(
 			goto include_it;
 
 		if (omits)
-			oidset_insert(omits, &obj->oid);
+			filterobjmap_put(omits, &obj->oid, obj->type, pathname);
 		return LOFR_MARK_SEEN; /* but not LOFR_DO_SHOW (hard omit) */
 	}
 
 include_it:
 	if (omits)
-		oidset_remove(omits, &obj->oid);
+		oidmap_remove(omits, &obj->oid);    // @@@@ Delete entry?
 	return LOFR_MARK_SEEN | LOFR_DO_SHOW;
 }
 
@@ -359,7 +386,7 @@ static enum list_objects_filter_result filter_sparse(
 	struct object *obj,
 	const char *pathname,
 	const char *filename,
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data_)
 {
 	struct filter_sparse_data *filter_data = filter_data_;
@@ -443,7 +470,7 @@ static enum list_objects_filter_result filter_sparse(
 			match = frame->default_match;
 		if (match == MATCHED) {
 			if (omits)
-				oidset_remove(omits, &obj->oid);
+				oidmap_remove(omits, &obj->oid);    // @@@@ Delete entry?
 			return LOFR_MARK_SEEN | LOFR_DO_SHOW;
 		}
 
@@ -458,7 +485,7 @@ static enum list_objects_filter_result filter_sparse(
 		 * again in the traversal, we will be asked again.
 		 */
 		if (omits)
-			oidset_insert(omits, &obj->oid);
+			filterobjmap_put(omits, &obj->oid, obj->type, pathname);
 
 		/*
 		 * Remember that at least 1 blob in this tree was
@@ -560,7 +587,7 @@ static enum list_objects_filter_result filter_combine(
 	struct object *obj,
 	const char *pathname,
 	const char *filename,
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data)
 {
 	struct combine_filter_data *d = filter_data;
@@ -590,23 +617,25 @@ static void filter_combine__free(void *filter_data)
 	for (sub = 0; sub < d->nr; sub++) {
 		list_objects_filter__free(d->sub[sub].filter);
 		oidset_clear(&d->sub[sub].seen);
-		if (d->sub[sub].omits.set.size)
+		if (d->sub[sub].omits.map.private_size)
 			BUG("expected oidset to be cleared already");
 	}
 	free(d->sub);
 }
 
-static void add_all(struct oidset *dest, struct oidset *src) {
-	struct oidset_iter iter;
-	struct object_id *src_oid;
+static void add_all(struct oidmap *dest, struct oidmap *src) {
+	struct oidmap_iter iter;
+	struct filterobjmap_entry *src_entry;
 
-	oidset_iter_init(src, &iter);
-	while ((src_oid = oidset_iter_next(&iter)) != NULL)
-		oidset_insert(dest, src_oid);
+	oidmap_iter_init(src, &iter);
+	while ((src_entry = oidmap_iter_next(&iter)) != NULL) {
+		oidmap_remove(src, &src_entry->e.oid);
+		oidmap_put(dest, src_entry);
+	}
 }
 
 static void filter_combine__finalize_omits(
-	struct oidset *omits,
+	struct oidmap *omits,
 	void *filter_data)
 {
 	struct combine_filter_data *d = filter_data;
@@ -614,7 +643,7 @@ static void filter_combine__finalize_omits(
 
 	for (sub = 0; sub < d->nr; sub++) {
 		add_all(omits, &d->sub[sub].omits);
-		oidset_clear(&d->sub[sub].omits);
+		filterobjmap_free(&d->sub[sub].omits);
 	}
 }
 
@@ -655,7 +684,7 @@ static filter_init_fn s_filters[] = {
 };
 
 struct filter *list_objects_filter__init(
-	struct oidset *omitted,
+	struct oidmap *omitted,
 	struct list_objects_filter_options *filter_options)
 {
 	struct filter *filter;

@@ -16,7 +16,6 @@
 #include "bisect.h"
 #include "progress.h"
 #include "reflog-walk.h"
-#include "oidset.h"
 #include "packfile.h"
 
 static const char rev_list_usage[] =
@@ -63,10 +62,10 @@ static struct progress *progress;
 static unsigned progress_counter;
 
 static struct list_objects_filter_options filter_options;
-static struct oidset omitted_objects;
+static struct oidmap omitted_objects;
 static int arg_print_omitted; /* print objects omitted by filter */
 
-static struct oidset missing_objects;
+static struct oidmap missing_objects;
 enum missing_action {
 	MA_ERROR = 0,    /* fail if any missing objects are encountered */
 	MA_ALLOW_ANY,    /* silently allow ALL missing objects */
@@ -77,8 +76,65 @@ static enum missing_action arg_missing_action;
 
 /* display only the oid of each object encountered */
 static int arg_show_object_names = 1;
+// @@@@
+static int arg_show_object_oid   = 0;
+// @@@@ Add new argument to show the new extended info
 
 #define DEFAULT_OIDSET_SIZE     (16*1024)
+
+static void printObject(FILE *out, const struct object_id *oid, int objectType,
+			const char *name, int isOmitted, int isMissing)
+{
+	const char *p;
+	const char *typeName;
+
+	if (arg_show_object_oid) {
+		if (isOmitted) {
+			fputc('~', out);
+			fputs(oid_to_hex(oid), out);
+		} else if (isMissing) {
+			fputc('?', out);
+			fputs(oid_to_hex(oid), out);
+		} else {
+			fputs(oid_to_hex(oid), out);
+			fputc(' ', out);
+		}
+	}
+
+	if (isOmitted)
+		fputs("<omitted> ", out);
+	else if (isMissing)
+		fputs("<missing> ", out);
+	else
+		fputs("<present> ", out);
+
+	switch (objectType) {
+	case OBJ_COMMIT:
+		fputs("comm ", out);
+		break;
+	case OBJ_TREE:
+		fputs("tree ", out);
+		break;
+	case OBJ_BLOB:
+		fputs("blob ", out);
+		break;
+	case OBJ_TAG:
+		fputs("tag ", out);
+		break;
+	default:
+		BUG("Unknown object type for %s", oid_to_hex(oid));
+		break;
+	}
+
+	if (!name[0] && (objectType == OBJ_TREE))
+		name = "/";
+
+	for (p = name; *p && *p != '\n'; p++)
+		fputc(*p, out);
+
+	if (OBJ_COMMIT != objectType)
+		fputc('\n', out);
+}
 
 static void finish_commit(struct commit *commit);
 static void show_commit(struct commit *commit, void *data)
@@ -117,7 +173,7 @@ static void show_commit(struct commit *commit, void *data)
 		fputs(find_unique_abbrev(&commit->object.oid, revs->abbrev),
 		      stdout);
 	else
-		fputs(oid_to_hex(&commit->object.oid), stdout);
+		printObject(stdout, &commit->object.oid, OBJ_COMMIT, "", 0, 0);
 	if (revs->print_parents) {
 		struct commit_list *parents = commit->parents;
 		while (parents) {
@@ -204,8 +260,10 @@ static void finish_commit(struct commit *commit)
 			   commit);
 }
 
-static inline void finish_object__ma(struct object *obj)
+static inline void finish_object__ma(struct object *obj, const char *name)
 {
+	struct string_entry *entry;
+
 	/*
 	 * Whether or not we try to dynamically fetch missing objects
 	 * from the server, we currently DO NOT have the object.  We
@@ -222,7 +280,7 @@ static inline void finish_object__ma(struct object *obj)
 		return;
 
 	case MA_PRINT:
-		oidset_insert(&missing_objects, &obj->oid);
+		filterobjmap_put(&missing_objects, &obj->oid, obj->type, name);
 		return;
 
 	case MA_ALLOW_PROMISOR:
@@ -242,7 +300,7 @@ static int finish_object(struct object *obj, const char *name, void *cb_data)
 {
 	struct rev_list_info *info = cb_data;
 	if (oid_object_info_extended(the_repository, &obj->oid, NULL, 0) < 0) {
-		finish_object__ma(obj);
+		finish_object__ma(obj, name);
 		return 1;
 	}
 	if (info->revs->verify_objects && !obj->parsed && obj->type != OBJ_COMMIT)
@@ -274,7 +332,7 @@ static void show_object(struct object *obj, const char *name, void *cb_data)
 	}
 
 	if (arg_show_object_names)
-		show_object_with_name(stdout, obj, name);
+		printObject(stdout, &obj->oid, obj->type, name, 0, 0);
 	else
 		printf("%s\n", oid_to_hex(&obj->oid));
 }
@@ -652,29 +710,39 @@ int cmd_rev_list(int argc, const char **argv, const char *prefix)
 	}
 
 	if (arg_print_omitted)
-		oidset_init(&omitted_objects, DEFAULT_OIDSET_SIZE);
+		oidmap_init(&omitted_objects, DEFAULT_OIDSET_SIZE);
 	if (arg_missing_action == MA_PRINT)
-		oidset_init(&missing_objects, DEFAULT_OIDSET_SIZE);
+		oidmap_init(&missing_objects, DEFAULT_OIDSET_SIZE);
 
 	traverse_commit_list_filtered(
 		&filter_options, &revs, show_commit, show_object, &info,
 		(arg_print_omitted ? &omitted_objects : NULL));
 
 	if (arg_print_omitted) {
-		struct oidset_iter iter;
-		struct object_id *oid;
-		oidset_iter_init(&omitted_objects, &iter);
-		while ((oid = oidset_iter_next(&iter)))
-			printf("~%s\n", oid_to_hex(oid));
-		oidset_clear(&omitted_objects);
+		struct oidmap_iter iter;
+		struct filterobjmap_entry *entry;
+		oidmap_iter_init(&omitted_objects, &iter);
+		while ((entry = oidmap_iter_next(&iter))) {
+			if (arg_show_object_names)
+				printObject(stdout, &entry->e.oid, entry->type,
+					    entry->string, 1, 0);
+			else
+				printf("~%s\n", oid_to_hex(&entry->e.oid));
+		}
+		filterobjmap_free(&omitted_objects);
 	}
 	if (arg_missing_action == MA_PRINT) {
-		struct oidset_iter iter;
-		struct object_id *oid;
-		oidset_iter_init(&missing_objects, &iter);
-		while ((oid = oidset_iter_next(&iter)))
-			printf("?%s\n", oid_to_hex(oid));
-		oidset_clear(&missing_objects);
+		struct oidmap_iter iter;
+		struct filterobjmap_entry *entry;
+		oidmap_iter_init(&missing_objects, &iter);
+		while ((entry = oidmap_iter_next(&iter))) {
+			if (arg_show_object_names)
+				printObject(stdout, &entry->e.oid, entry->type,
+					    entry->string, 0, 1);
+			else
+				printf("?%s\n", oid_to_hex(&entry->e.oid));
+		}
+		filterobjmap_free(&missing_objects);
 	}
 
 	stop_progress(&progress);

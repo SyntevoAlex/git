@@ -409,7 +409,7 @@ void traverse_commit_list_filtered(
 	show_commit_fn show_commit,
 	show_object_fn show_object,
 	void *show_data,
-	struct oidset *omitted)
+	struct oidmap *omitted)
 {
 	struct traversal_context ctx;
 
